@@ -1,3 +1,10 @@
+// Example PM2 ecosystem config for dj-perms.
+// Copy to ecosystem.config.js on the VM and fill in your secret key.
+// This file is safe to commit — the real config is in .gitignore.
+//
+// scp ecosystem.config.example.js echelon@167.86.81.218:~/domains/dj-perms.pascalnjue.com/ecosystem.config.js
+// Then edit DJANGO_SECRET_KEY on the VM.
+
 module.exports = {
   apps: [{
     name: 'dj-perms',
@@ -6,7 +13,7 @@ module.exports = {
     interpreter: 'none',
     args: 'dj_perms.wsgi:application --bind 127.0.0.1:8765 --workers 3 --log-level info',
     env: {
-      DJANGO_SECRET_KEY: '9e)l-tnwk3iail15ptelc9gae0zpakwkt8=0e79^3(9ec&41ez',
+      DJANGO_SECRET_KEY: 'generate-a-real-key-here',
       DJANGO_DEBUG: 'false',
     },
     instances: 1,
