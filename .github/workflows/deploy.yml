@@ -1,0 +1,39 @@
+name: Deploy to Echelon
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: 167.86.81.218
+          username: echelon
+          key: ${{ secrets.ECHELON_SSH_KEY }}
+          script: |
+            set -e
+            cd ~/domains/dj-perms.pascalnjue.com
+
+            echo "📥 Pulling latest code..."
+            git pull origin main
+
+            echo "📦 Installing dependencies..."
+            source .venv/bin/activate
+            pip install -r <(echo "django>=6.0.6
+            gunicorn") --quiet
+
+            echo "🗄️ Running migrations..."
+            python manage.py migrate --noinput
+
+            echo "📁 Collecting static files..."
+            python manage.py collectstatic --noinput
+
+            echo "🔄 Restarting application..."
+            pm2 restart dj-perms
+
+            echo "✅ Deploy complete!"
