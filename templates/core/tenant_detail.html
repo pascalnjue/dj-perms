@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% block title %}{{ tenant.name }} — DJ Perms{% endblock %}
+{% block content %}
+
+<div class="mb-6">
+    <a href="{% url 'tenant_list' %}" class="text-sm text-gray-400 hover:text-white">← Back to Tenants</a>
+</div>
+
+<!-- Tenant Header -->
+<div class="bg-gray-900 rounded-xl p-6 border border-gray-800 mb-6">
+    <div class="flex items-center gap-3 mb-2">
+        <h1 class="text-2xl font-bold">{{ tenant.name }}</h1>
+        <span class="perm-badge object">user_can_access()</span>
+        <span class="perm-badge model">Group: {{ tenant.group.name|default:"none" }}</span>
+    </div>
+    <p class="text-gray-400 text-sm">
+        ⓘ This page is protected by <code class="bg-gray-800 px-1.5 py-0.5 rounded text-xs">user_can_access(request.user, tenant)</code> —
+        a custom object-level check in the view. If you don't have access, you get a 403-style redirect.
+        The tenant's Django Group (<code>{{ tenant.group.name|default:"none" }}</code>) holds all tenant-level permissions.
+    </p>
+    <div class="flex gap-4 mt-4 text-sm">
+        <span class="text-gray-300">📦 <strong>{{ orders.count }}</strong> orders</span>
+        <span class="text-gray-300">👤 <strong>{{ accounts.count }}</strong> accounts</span>
+        <span class="text-gray-300">🛵 <strong>{{ drivers.count }}</strong> drivers</span>
+        <span class="px-2 py-0.5 rounded text-xs {% if tenant.is_active %}bg-green-900/50 text-green-400{% else %}bg-red-900/50 text-red-400{% endif %}">{{ tenant.is_active|yesno:"Active,Inactive" }}</span>
+    </div>
+</div>
+
+<!-- Accounts -->
+<div class="mb-8">
+    <h3 class="text-lg font-semibold mb-3">👤 Accounts</h3>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {% for account in accounts %}
+        <a href="{% url 'account_detail' account.pk %}" class="bg-gray-900 rounded-xl p-4 border border-gray-800 hover:border-brand-500/50 transition">
+            <h4 class="font-medium">{{ account.name }}</h4>
+            <p class="text-sm text-gray-400 mt-1">{{ account.order_count }} orders</p>
+            <span class="perm-badge info text-xs mt-2 inline-block">acct: {{ account.pk }}</span>
+        </a>
+        {% empty %}
+        <p class="text-gray-500 col-span-3">No accounts in this tenant.</p>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Drivers -->
+<div class="mb-8">
+    <h3 class="text-lg font-semibold mb-3">🛵 Drivers</h3>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {% for driver in drivers %}
+        <a href="{% url 'driver_detail' driver.pk %}" class="bg-gray-900 rounded-xl p-4 border border-gray-800 hover:border-purple-500/50 transition">
+            <h4 class="font-medium">{{ driver.user.username }}</h4>
+            <p class="text-sm text-gray-400 mt-1">
+                {{ driver.vehicle_type|default:"No vehicle" }}
+                {% if driver.home_tenant != tenant %}
+                <span class="text-purple-400">(shared)</span>
+                {% endif %}
+            </p>
+            <span class="perm-badge info text-xs mt-2 inline-block">driver: {{ driver.pk }}</span>
+        </a>
+        {% empty %}
+        <p class="text-gray-500 col-span-3">No drivers.</p>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Recent Orders -->
+<div>
+    <h3 class="text-lg font-semibold mb-3">📋 Recent Orders</h3>
+    <div class="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="text-gray-400 border-b border-gray-800 bg-gray-900/50">
+                    <th class="text-left py-2 px-4">#</th>
+                    <th class="text-left py-2 px-4">Account</th>
+                    <th class="text-left py-2 px-4">Status</th>
+                    <th class="text-left py-2 px-4">Driver</th>
+                    <th class="text-right py-2 px-4">Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in orders %}
+                <tr class="border-b border-gray-800/50 hover:bg-gray-800/30">
+                    <td class="py-2 px-4"><a href="{% url 'order_detail' order.pk %}" class="text-brand-500 font-mono text-xs">#{{ order.pk }}</a></td>
+                    <td class="py-2 px-4">{{ order.account.name }}</td>
+                    <td class="py-2 px-4"><span class="px-2 py-0.5 rounded-full text-xs font-medium status-{{ order.status }}">{{ order.get_status_display }}</span></td>
+                    <td class="py-2 px-4 text-gray-400">{{ order.driver.user.username|default:"—" }}</td>
+                    <td class="py-2 px-4 text-right text-gray-500 text-xs">{{ order.created_at|date:"M d" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="py-4 text-center text-gray-500">No orders yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

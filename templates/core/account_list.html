@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block title %}Accounts — DJ Perms{% endblock %}
+{% block content %}
+
+<div class="mb-6">
+    <div class="flex items-center gap-3 mb-2">
+        <h1 class="text-2xl font-bold">👤 Accounts</h1>
+        <span class="perm-badge object">object-level filter</span>
+    </div>
+    <p class="text-gray-400 text-sm">
+        ⓘ Accounts are filtered to <strong>your accessible tenants</strong> via <code class="bg-gray-800 px-1.5 py-0.5 rounded text-xs">get_user_scope()</code>.
+        Each account belongs to <strong>exactly one tenant</strong> (strict hierarchy).
+    </p>
+</div>
+
+{% if accounts %}
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    {% for account in accounts %}
+    <a href="{% url 'account_detail' account.pk %}"
+       class="bg-gray-900 rounded-xl p-5 border border-gray-800 hover:border-brand-500/50 transition">
+        <div class="flex items-start justify-between">
+            <div>
+                <h3 class="font-semibold">{{ account.name }}</h3>
+                <p class="text-sm text-gray-400 mt-1">{{ account.tenant.name }}</p>
+            </div>
+            <span class="text-xs text-gray-600 font-mono">#{{ account.pk }}</span>
+        </div>
+        <div class="flex items-center gap-4 mt-3 text-sm text-gray-400">
+            <span>📦 {{ account.order_count }} orders</span>
+            <span>⏳ {{ account.pending_orders }} pending</span>
+        </div>
+        {% if account.contact_email %}
+        <p class="text-xs text-gray-500 mt-2">{{ account.contact_email }}</p>
+        {% endif %}
+    </a>
+    {% endfor %}
+</div>
+{% else %}
+<div class="bg-gray-900 rounded-xl p-12 text-center border border-gray-800">
+    <p class="text-gray-500 text-lg">No accounts accessible.</p>
+</div>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block title %}Drivers — DJ Perms{% endblock %}
+{% block content %}
+
+<div class="mb-6">
+    <div class="flex items-center gap-3 mb-2">
+        <h1 class="text-2xl font-bold">🛵 Drivers</h1>
+        <span class="perm-badge object">M2M tenant scope</span>
+    </div>
+    <p class="text-gray-400 text-sm">
+        ⓘ Drivers have a <strong>home tenant</strong> + optional <strong>shared tenants</strong> (M2M).
+        The list shows drivers whose home or shared tenants overlap with your accessible tenants.
+        This query uses <code class="bg-gray-800 px-1.5 py-0.5 rounded text-xs">Q(home_tenant__in=tenants) | Q(shared_tenants__in=tenants)</code>.
+    </p>
+</div>
+
+{% if drivers %}
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    {% for driver in drivers %}
+    <a href="{% url 'driver_detail' driver.pk %}"
+       class="bg-gray-900 rounded-xl p-5 border border-gray-800 hover:border-purple-500/50 transition">
+        <div class="flex items-start justify-between">
+            <div>
+                <h3 class="font-semibold">{{ driver.user.username }}</h3>
+                <p class="text-sm text-gray-400 mt-1">{{ driver.home_tenant.name }}</p>
+            </div>
+            <span class="text-xs text-gray-600 font-mono">#{{ driver.pk }}</span>
+        </div>
+        <div class="flex items-center gap-4 mt-3 text-sm text-gray-400">
+            <span>📦 {{ driver.delivery_count }} deliveries</span>
+            <span>✅ {{ driver.completed_deliveries }} done</span>
+        </div>
+        <div class="mt-2 flex items-center gap-2">
+            <span class="text-xs text-gray-500">{{ driver.vehicle_type|default:"No vehicle" }}</span>
+            {% if driver.shared_tenants.exists %}
+            <span class="perm-badge object text-xs">+{{ driver.shared_tenants.count }} shared</span>
+            {% endif %}
+        </div>
+    </a>
+    {% endfor %}
+</div>
+{% else %}
+<div class="bg-gray-900 rounded-xl p-12 text-center border border-gray-800">
+    <p class="text-gray-500 text-lg">No drivers accessible.</p>
+</div>
+{% endif %}
+
+{% endblock %}

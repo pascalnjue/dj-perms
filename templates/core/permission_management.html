@@ -1,0 +1,176 @@
+{% extends 'base.html' %}
+{% block title %}Permission Management — DJ Perms{% endblock %}
+{% block content %}
+
+<div class="mb-6">
+    <div class="flex items-center gap-3 mb-2">
+        <h1 class="text-2xl font-bold">🔑 Permission Management</h1>
+        <span class="perm-badge required">@user_passes_test(is_superuser)</span>
+    </div>
+    <p class="text-gray-400 text-sm">
+        ⓘ This page is <strong>only accessible to super admins</strong> (enforced by <code class="bg-gray-800 px-1.5 py-0.5 rounded text-xs">@user_passes_test(lambda u: u.is_superuser)</code>).
+        It demonstrates how to manage per-user permissions and roles, bridging custom roles with Django's built-in <code>Group</code> and <code>Permission</code> models.
+    </p>
+</div>
+
+<!-- Role Management -->
+<div class="mb-8">
+    <div class="bg-gray-900 rounded-xl p-5 border border-gray-800">
+        <h3 class="text-lg font-semibold mb-4">
+            👥 User Roles
+            <span class="perm-badge model text-xs ml-2">Django Groups</span>
+        </h3>
+        <p class="text-sm text-gray-400 mb-4">
+            ⓘ Changing a user's role triggers a <strong>signal</strong> that auto-assigns them to the appropriate Django Groups.
+            This shows the bridge between our custom role system and Django's Group/Permission framework.
+        </p>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="text-gray-400 border-b border-gray-800">
+                        <th class="text-left py-2 px-3">User</th>
+                        <th class="text-left py-2 px-3">Current Role</th>
+                        <th class="text-left py-2 px-3">Groups</th>
+                        <th class="text-left py-2 px-3">Direct Perms</th>
+                        <th class="text-right py-2 px-3">Change Role</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for up in user_perms_data %}
+                    <tr class="border-b border-gray-800/50 hover:bg-gray-800/30">
+                        <td class="py-2 px-3">
+                            <span class="font-medium">{{ up.user.username }}</span>
+                            {% if up.user.is_superuser %}<span class="text-xs text-amber-400 ml-1">👑</span>{% endif %}
+                        </td>
+                        <td class="py-2 px-3">
+                            {% if up.profile %}
+                            <span class="px-2 py-0.5 rounded text-xs bg-gray-800">{{ up.profile.get_role_display }}</span>
+                            {% else %}
+                            <span class="text-gray-500 text-xs">No profile</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-2 px-3">
+                            <div class="flex flex-wrap gap-1">
+                                {% for group in up.user.groups.all %}
+                                <span class="px-1.5 py-0.5 rounded text-xs bg-purple-900/50 text-purple-300 border border-purple-800/50">{{ group.name }}</span>
+                                {% empty %}
+                                <span class="text-gray-600 text-xs">none</span>
+                                {% endfor %}
+                            </div>
+                        </td>
+                        <td class="py-2 px-3">
+                            <span class="text-xs">{{ up.direct_perm_ids|length }} direct</span>
+                        </td>
+                        <td class="py-2 px-3 text-right">
+                            <form method="post" class="inline-flex items-center gap-1">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="update_role">
+                                <input type="hidden" name="user_id" value="{{ up.user.pk }}">
+                                <select name="role" class="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-brand-500">
+                                    {% for value, label in role_choices %}
+                                    <option value="{{ value }}" {% if up.profile and up.profile.role == value %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                                <button type="submit" class="bg-brand-600 hover:bg-brand-700 text-white text-xs px-2 py-1 rounded transition">Save</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Permission Matrix -->
+<div class="mb-8">
+    <div class="bg-gray-900 rounded-xl p-5 border border-gray-800">
+        <h3 class="text-lg font-semibold mb-4">
+            🔒 Per-User Permission Toggles
+            <span class="perm-badge model text-xs ml-2">Django user_permissions</span>
+        </h3>
+        <p class="text-sm text-gray-400 mb-4">
+            ⓘ Toggle individual Django permissions per user. <strong>Green = granted</strong> (directly or via group).
+            Direct permissions (solid) override group permissions (dashed). This uses Django's <code>user.user_permissions</code> M2M.
+        </p>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-xs">
+                <thead>
+                    <tr class="text-gray-400 border-b border-gray-800">
+                        <th class="text-left py-2 px-2 sticky left-0 bg-gray-900 z-10">Permission</th>
+                        {% for up in user_perms_data %}
+                        <th class="text-center py-2 px-1 min-w-[70px]">{{ up.user.username|truncatechars:8 }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for perm in all_permissions %}
+                    <tr class="border-b border-gray-800/50 hover:bg-gray-800/30">
+                        <td class="py-1.5 px-2 sticky left-0 bg-gray-900">
+                            <span class="text-gray-300">{{ perm.name }}</span>
+                            <span class="text-gray-600 block">{{ perm.content_type.app_label }}.{{ perm.codename }}</span>
+                        </td>
+                        {% for up in user_perms_data %}
+                        <td class="text-center py-1.5 px-1">
+                            {% if up.user.is_superuser %}
+                            <span class="text-green-400 text-lg" title="Super admin — all permissions">👑</span>
+                            {% else %}
+                            <form method="post" class="inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="toggle_perm">
+                                <input type="hidden" name="user_id" value="{{ up.user.pk }}">
+                                <input type="hidden" name="perm_id" value="{{ perm.pk }}">
+                                <button type="submit" class="w-6 h-6 rounded flex items-center justify-center transition text-xs
+                                    {% if perm.pk in up.perm_ids %}
+                                    bg-green-900/50 text-green-400 border border-green-700/50 hover:bg-green-800/50
+                                    {% else %}
+                                    bg-gray-800 text-gray-600 border border-gray-700/50 hover:bg-gray-700
+                                    {% endif %}"
+                                    title="{% if perm.pk in up.perm_ids %}Revoke{% else %}Grant{% endif %} {{ perm.codename }} for {{ up.user.username }}">
+                                    {% if perm.pk in up.perm_ids %}✓{% else %}—{% endif %}
+                                </button>
+                            </form>
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Groups Summary -->
+<div class="mb-8">
+    <div class="bg-gray-900 rounded-xl p-5 border border-gray-800">
+        <h3 class="text-lg font-semibold mb-4">
+            👥 Django Groups
+            <span class="perm-badge model text-xs ml-2">auth.Group</span>
+        </h3>
+        <p class="text-sm text-gray-400 mb-4">
+            ⓘ These are Django's built-in <code>Group</code> objects. Each tenant gets its own group (via signal).
+            Role groups are created for standard roles. Groups batch-assign permissions to users.
+        </p>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for group in groups %}
+            <div class="bg-gray-800/50 rounded-lg p-3 border border-gray-700/50">
+                <h4 class="font-medium text-sm">{{ group.name }}</h4>
+                <p class="text-xs text-gray-500 mt-1">{{ group.permissions.count }} permissions</p>
+                <div class="flex flex-wrap gap-1 mt-2">
+                    {% for perm in group.permissions.all|slice:":5" %}
+                    <span class="px-1.5 py-0.5 rounded text-xs bg-gray-700 text-gray-400">{{ perm.codename|truncatechars:20 }}</span>
+                    {% endfor %}
+                    {% if group.permissions.count > 5 %}
+                    <span class="text-xs text-gray-600">+{{ group.permissions.count|add:"-5" }} more</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+{% endblock %}

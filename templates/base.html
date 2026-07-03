@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-gray-950">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}DJ Perms Demo{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { 50: '#eff6ff', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Permission annotation badges */
+        .perm-badge {
+            @apply inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-mono font-semibold;
+        }
+        .perm-badge.required { background: #dc262620; color: #fca5a5; border: 1px solid #dc262640; }
+        .perm-badge.object { background: #7c3aed20; color: #c4b5fd; border: 1px solid #7c3aed40; }
+        .perm-badge.model  { background: #2563eb20; color: #93c5fd; border: 1px solid #2563eb40; }
+        .perm-badge.info   { background: #0891b220; color: #67e8f9; border: 1px solid #0891b240; }
+        /* Status badges */
+        .status-pending    { background: #eab30820; color: #fde047; }
+        .status-confirmed   { background: #3b82f620; color: #93c5fd; }
+        .status-picked_up  { background: #6366f120; color: #c7d2fe; }
+        .status-in_transit { background: #8b5cf620; color: #ddd6fe; }
+        .status-delivered  { background: #22c55e20; color: #86efac; }
+        .status-cancelled  { background: #ef444420; color: #fca5a5; }
+    </style>
+</head>
+<body class="h-full bg-gray-950 text-gray-100">
+
+<!-- Navigation -->
+<nav class="bg-gray-900 border-b border-gray-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-14">
+            <div class="flex items-center gap-6">
+                <a href="{% url 'dashboard' %}" class="text-brand-500 font-bold text-lg tracking-tight">
+                    🔐 DJ Perms
+                </a>
+                <div class="hidden md:flex items-center gap-1">
+                    <a href="{% url 'dashboard' %}" class="px-3 py-1.5 text-sm rounded-md {% if request.resolver_match.url_name == 'dashboard' %}bg-gray-800 text-white{% else %}text-gray-400 hover:text-white hover:bg-gray-800{% endif %}">
+                        📊 Dashboard
+                    </a>
+                    <a href="{% url 'tenant_list' %}" class="px-3 py-1.5 text-sm rounded-md {% if 'tenant' in request.resolver_match.url_name %}bg-gray-800 text-white{% else %}text-gray-400 hover:text-white hover:bg-gray-800{% endif %}">
+                        🏢 Tenants
+                    </a>
+                    <a href="{% url 'account_list' %}" class="px-3 py-1.5 text-sm rounded-md {% if 'account' in request.resolver_match.url_name %}bg-gray-800 text-white{% else %}text-gray-400 hover:text-white hover:bg-gray-800{% endif %}">
+                        👤 Accounts
+                    </a>
+                    <a href="{% url 'driver_list' %}" class="px-3 py-1.5 text-sm rounded-md {% if 'driver' in request.resolver_match.url_name %}bg-gray-800 text-white{% else %}text-gray-400 hover:text-white hover:bg-gray-800{% endif %}">
+                        🛵 Drivers
+                    </a>
+                    <a href="{% url 'order_list' %}" class="px-3 py-1.5 text-sm rounded-md {% if 'order' in request.resolver_match.url_name %}bg-gray-800 text-white{% else %}text-gray-400 hover:text-white hover:bg-gray-800{% endif %}">
+                        📦 Orders
+                    </a>
+                    {% if user.is_superuser %}
+                    <a href="{% url 'permission_management' %}" class="px-3 py-1.5 text-sm rounded-md {% if 'permission' in request.resolver_match.url_name %}bg-gray-800 text-white{% else %}text-gray-400 hover:text-white hover:bg-gray-800{% endif %}">
+                        🔑 Permissions
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                {% if user.is_authenticated %}
+                <span class="text-sm text-gray-400">
+                    {{ user.username }}
+                    {% if user.profile %}
+                    <span class="px-1.5 py-0.5 rounded text-xs font-medium bg-gray-800 text-gray-300">
+                        {{ user.profile.get_role_display }}
+                    </span>
+                    {% endif %}
+                </span>
+                <a href="{% url 'logout' %}" class="text-sm text-gray-400 hover:text-white">Logout</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</nav>
+
+<!-- Messages -->
+{% if messages %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+    {% for message in messages %}
+    <div class="px-4 py-2 rounded-lg mb-2 text-sm
+        {% if message.tags == 'success' %}bg-green-900/50 text-green-300 border border-green-800
+        {% elif message.tags == 'error' %}bg-red-900/50 text-red-300 border border-red-800
+        {% else %}bg-blue-900/50 text-blue-300 border border-blue-800{% endif %}">
+        {{ message }}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Main Content -->
+<main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    {% block content %}{% endblock %}
+</main>
+
+<!-- Footer -->
+<footer class="border-t border-gray-800 mt-12 py-6">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-xs text-gray-600">
+        Django Permissions Demo — Built to demonstrate Django's authentication &amp; authorization system
+        <br>
+        <span class="perm-badge required">@permission_required</span>
+        <span class="perm-badge object">object-level</span>
+        <span class="perm-badge model">Django Group</span>
+        <span class="perm-badge info">model perm</span>
+    </div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,195 @@
+{% extends 'base.html' %}
+{% load dict_filters %}
+{% block title %}Dashboard — DJ Perms{% endblock %}
+{% block content %}
+
+<!-- Header with permission context -->
+<div class="mb-6">
+    <div class="flex items-center gap-3 mb-2">
+        <h1 class="text-2xl font-bold">📊 Analytics Dashboard</h1>
+        <span class="perm-badge info">@login_required</span>
+        <span class="perm-badge object">scoped query</span>
+    </div>
+    <p class="text-gray-400 text-sm">
+        ⓘ This view uses <code class="bg-gray-800 px-1.5 py-0.5 rounded text-xs">@login_required</code> (any authenticated user can access).
+        Data shown is <strong>scoped to your tenant access</strong> via <code class="bg-gray-800 px-1.5 py-0.5 rounded text-xs">get_user_scope()</code> —
+        a view-level filter, not Django's <code>has_perm()</code>. Combined with the custom auth backend for double protection.
+    </p>
+</div>
+
+<!-- Stats Cards -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+    <div class="bg-gray-900 rounded-xl p-5 border border-gray-800">
+        <div class="text-3xl font-bold text-brand-500">{{ tenant_count }}</div>
+        <div class="text-sm text-gray-400 mt-1">{{ tenant_count|pluralize:"Tenant,Tenants" }}</div>
+    </div>
+    <div class="bg-gray-900 rounded-xl p-5 border border-gray-800">
+        <div class="text-3xl font-bold text-emerald-400">{{ account_count }}</div>
+        <div class="text-sm text-gray-400 mt-1">Accounts</div>
+    </div>
+    <div class="bg-gray-900 rounded-xl p-5 border border-gray-800">
+        <div class="text-3xl font-bold text-purple-400">{{ driver_count }}</div>
+        <div class="text-sm text-gray-400 mt-1">Drivers</div>
+    </div>
+    <div class="bg-gray-900 rounded-xl p-5 border border-gray-800">
+        <div class="text-3xl font-bold text-amber-400">{{ total_orders }}</div>
+        <div class="text-sm text-gray-400 mt-1">Total Orders</div>
+    </div>
+</div>
+
+<!-- Order Status Breakdown -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+    <!-- Status Pie (text-based) -->
+    <div class="bg-gray-900 rounded-xl p-5 border border-gray-800">
+        <h3 class="text-lg font-semibold mb-4">📦 Order Status Breakdown</h3>
+        <div class="space-y-2">
+            {% for status, count in status_breakdown.items %}
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full bg-{{ status_colors|get_item:status }}-500"></span>
+                    <span class="text-sm capitalize">{{ status|default:"unknown" }}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-sm font-bold">{{ count }}</span>
+                    <span class="text-xs text-gray-500">
+                        {% if total_orders > 0 %}
+                        ({% widthratio count total_orders 100 %}%)
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+            <div class="w-full bg-gray-800 rounded-full h-1.5">
+                <div class="bg-{{ status_colors|get_item:status }}-500 h-1.5 rounded-full"
+                     style="width: {% if total_orders > 0 %}{% widthratio count total_orders 100 %}{% else %}0{% endif %}%">
+                </div>
+            </div>
+            {% empty %}
+            <p class="text-gray-500 text-sm">No orders yet.</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Daily Orders Trend -->
+    <div class="bg-gray-900 rounded-xl p-5 border border-gray-800">
+        <h3 class="text-lg font-semibold mb-4">
+            📈 Daily Orders (Last 7 Days)
+            <span class="perm-badge info text-xs ml-2">scoped by tenant</span>
+        </h3>
+        {% if daily_orders %}
+        <div class="flex items-end gap-2 h-40">
+            {% for day in daily_orders %}
+            <div class="flex-1 flex flex-col items-center gap-1">
+                <span class="text-xs font-bold text-gray-300">{{ day.count }}</span>
+                <div class="w-full bg-brand-600 rounded-t"
+                     style="height: {% widthratio day.count 5 100 %}%; min-height: 4px;">
+                </div>
+                <span class="text-xs text-gray-500">{{ day.day|slice:"5:" }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-gray-500 text-sm">No data for the last 7 days.</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Tenant Breakdown (Super Admin) -->
+{% if is_super %}
+<div class="mb-8">
+    <div class="bg-gray-900 rounded-xl p-5 border border-gray-800">
+        <h3 class="text-lg font-semibold mb-4">
+            🏢 Tenant Breakdown
+            <span class="perm-badge info text-xs ml-2">super admin only</span>
+        </h3>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="text-gray-400 border-b border-gray-800">
+                        <th class="text-left py-2">Tenant</th>
+                        <th class="text-right py-2">Accounts</th>
+                        <th class="text-right py-2">Orders</th>
+                        <th class="text-right py-2">Drivers</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in tenant_stats %}
+                    <tr class="border-b border-gray-800/50 hover:bg-gray-800/30">
+                        <td class="py-2">
+                            <a href="{% url 'tenant_detail' t.slug %}" class="text-brand-500 hover:underline">{{ t.name }}</a>
+                        </td>
+                        <td class="text-right py-2">{{ t.stats_account_count }}</td>
+                        <td class="text-right py-2">{{ t.stats_order_count }}</td>
+                        <td class="text-right py-2">{{ t.stats_driver_count }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4" class="py-4 text-center text-gray-500">No tenants.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Driver Performance -->
+<div class="mb-8">
+    <div class="bg-gray-900 rounded-xl p-5 border border-gray-800">
+        <h3 class="text-lg font-semibold mb-4">🛵 Top Drivers by Completed Deliveries</h3>
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+            {% for d in driver_stats %}
+            <div class="bg-gray-800/50 rounded-lg p-4 text-center border border-gray-700/50">
+                <div class="text-xl font-bold text-purple-400">{{ d.user.username|default:d.user.get_username }}</div>
+                <div class="text-xs text-gray-500 mt-1">{{ d.home_tenant.name }}</div>
+                <div class="flex justify-center gap-3 mt-2">
+                    <div><span class="text-lg font-bold text-white">{{ d.completed }}</span><br><span class="text-xs text-gray-500">done</span></div>
+                    <div><span class="text-lg font-bold text-gray-400">{{ d.total }}</span><br><span class="text-xs text-gray-500">total</span></div>
+                </div>
+            </div>
+            {% empty %}
+            <p class="text-gray-500 text-sm col-span-5">No driver data.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Recent Orders -->
+<div>
+    <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold">📋 Recent Orders</h3>
+        <a href="{% url 'order_list' %}" class="text-sm text-brand-500 hover:underline">View all →</a>
+    </div>
+    <div class="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="text-gray-400 border-b border-gray-800 bg-gray-900/50">
+                    <th class="text-left py-3 px-4">ID</th>
+                    <th class="text-left py-3 px-4">Account</th>
+                    <th class="text-left py-3 px-4">Status</th>
+                    <th class="text-left py-3 px-4">Driver</th>
+                    <th class="text-right py-3 px-4">Amount</th>
+                    <th class="text-right py-3 px-4">Created</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in recent_orders %}
+                <tr class="border-b border-gray-800/50 hover:bg-gray-800/30">
+                    <td class="py-3 px-4">
+                        <a href="{% url 'order_detail' order.pk %}" class="text-brand-500 hover:underline font-mono">#{{ order.pk }}</a>
+                    </td>
+                    <td class="py-3 px-4">{{ order.account.name }}</td>
+                    <td class="py-3 px-4">
+                        <span class="px-2 py-0.5 rounded-full text-xs font-medium status-{{ order.status }}">{{ order.get_status_display }}</span>
+                    </td>
+                    <td class="py-3 px-4 text-gray-400">{{ order.driver.user.username|default:"—" }}</td>
+                    <td class="py-3 px-4 text-right">${{ order.amount }}</td>
+                    <td class="py-3 px-4 text-right text-gray-500">{{ order.created_at|date:"M d, H:i" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" class="py-8 text-center text-gray-500">No orders yet. Create one!</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

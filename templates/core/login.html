@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block title %}Login — DJ Perms{% endblock %}
+{% block content %}
+
+<div class="max-w-md mx-auto mt-12">
+    <div class="bg-gray-900 rounded-xl p-6 border border-gray-800">
+        <div class="text-center mb-6">
+            <h1 class="text-2xl font-bold">🔐 DJ Perms Demo</h1>
+            <p class="text-gray-400 text-sm mt-2">Login to explore Django's permission system</p>
+        </div>
+
+        <form method="post" class="space-y-4">
+            {% csrf_token %}
+            <div>
+                <label class="block text-sm text-gray-400 mb-1">Username</label>
+                <input type="text" name="username" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-brand-500" placeholder="e.g., admin">
+            </div>
+            <div>
+                <label class="block text-sm text-gray-400 mb-1">Password <span class="text-xs text-gray-600">(demo: demo1234)</span></label>
+                <input type="password" name="password" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-brand-500" value="demo1234">
+            </div>
+            <button type="submit" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold py-2 rounded-lg transition">
+                Sign In
+            </button>
+        </form>
+
+        <div class="mt-6 pt-6 border-t border-gray-800">
+            <h3 class="text-sm text-gray-400 mb-3">
+                🎭 Demo Users
+                <span class="perm-badge info text-xs ml-1">click to auto-fill</span>
+            </h3>
+            <div class="space-y-2">
+                {% for du in demo_users %}
+                <div class="flex items-center justify-between bg-gray-800/50 rounded-lg px-3 py-2 cursor-pointer hover:bg-gray-700/50 transition"
+                     onclick="document.querySelector('input[name=username]').value='{{ du.username }}'">
+                    <div>
+                        <span class="text-sm font-medium">{{ du.username }}</span>
+                        {% if du.profile %}
+                        <span class="text-xs text-gray-500 ml-2">({{ du.profile.get_role_display }})</span>
+                        {% endif %}
+                    </div>
+                    <span class="text-xs text-gray-600">
+                        {% if du.is_superuser %}🔑 super admin
+                        {% elif du.is_staff %}👔 staff
+                        {% else %}👤 user{% endif %}
+                    </span>
+                </div>
+                {% empty %}
+                <p class="text-sm text-gray-500">No demo users yet. Run seed data!</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <p class="text-xs text-gray-600 mt-4 text-center">
+            ⓘ This is a DEMO login — password is <code>demo1234</code> for all users.
+            <br>In production you'd use Django's full authentication system.
+        </p>
+    </div>
+</div>
+
+{% endblock %}

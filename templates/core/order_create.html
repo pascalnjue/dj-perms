@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% block title %}Create Order — DJ Perms{% endblock %}
+{% block content %}
+
+<div class="mb-6">
+    <a href="{% url 'order_list' %}" class="text-sm text-gray-400 hover:text-white">← Back to Orders</a>
+</div>
+
+<div class="max-w-xl">
+    <div class="bg-gray-900 rounded-xl p-6 border border-gray-800">
+        <div class="flex items-center gap-3 mb-2">
+            <h1 class="text-2xl font-bold">📦 New Order</h1>
+            <span class="perm-badge info">@login_required</span>
+        </div>
+        <p class="text-gray-400 text-sm mb-6">
+            ⓘ The account dropdown below is <strong>scoped to your accessible tenants</strong>.
+            When submitted, the view checks <code class="bg-gray-800 px-1.5 py-0.5 rounded text-xs">user_can_access(request.user, account)</code>
+            before creating the order.
+        </p>
+
+        <form method="post" class="space-y-4">
+            {% csrf_token %}
+            <div>
+                <label class="block text-sm text-gray-400 mb-1">Account <span class="text-red-400">*</span></label>
+                <select name="account" required class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-brand-500">
+                    <option value="">Select an account...</option>
+                    {% for account in accounts %}
+                    <option value="{{ account.pk }}">{{ account.name }} ({{ account.tenant.name }})</option>
+                    {% endfor %}
+                </select>
+                <p class="text-xs text-gray-600 mt-1">Only accounts you have access to are shown.</p>
+            </div>
+            <div>
+                <label class="block text-sm text-gray-400 mb-1">Description <span class="text-red-400">*</span></label>
+                <textarea name="description" rows="3" required class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-brand-500" placeholder="What's being delivered?"></textarea>
+            </div>
+            <div>
+                <label class="block text-sm text-gray-400 mb-1">Pickup Address <span class="text-red-400">*</span></label>
+                <input type="text" name="pickup_address" required class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-brand-500" placeholder="123 Main St...">
+            </div>
+            <div>
+                <label class="block text-sm text-gray-400 mb-1">Delivery Address <span class="text-red-400">*</span></label>
+                <input type="text" name="delivery_address" required class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-brand-500" placeholder="456 Oak Ave...">
+            </div>
+            <div>
+                <label class="block text-sm text-gray-400 mb-1">Amount ($)</label>
+                <input type="number" name="amount" step="0.01" value="0.00" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-brand-500">
+            </div>
+            <button type="submit" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold py-2.5 rounded-lg transition">
+                Create Order
+            </button>
+        </form>
+    </div>
+</div>
+
+{% endblock %}

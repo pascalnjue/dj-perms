@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block title %}Tenants — DJ Perms{% endblock %}
+{% block content %}
+
+<div class="mb-6">
+    <div class="flex items-center gap-3 mb-2">
+        <h1 class="text-2xl font-bold">🏢 Tenants</h1>
+        <span class="perm-badge object">object-level</span>
+    </div>
+    <p class="text-gray-400 text-sm">
+        ⓘ The tenant list is <strong>scoped to your tenant access</strong>. Super admins see all tenants;
+        others see only tenants they belong to. This is enforced by <code class="bg-gray-800 px-1.5 py-0.5 rounded text-xs">get_user_scope()</code>.
+    </p>
+</div>
+
+{% if tenants %}
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    {% for tenant in tenants %}
+    <a href="{% url 'tenant_detail' tenant.slug %}"
+       class="bg-gray-900 rounded-xl p-5 border border-gray-800 hover:border-brand-500/50 transition">
+        <h3 class="text-lg font-semibold">{{ tenant.name }}</h3>
+        <div class="flex items-center gap-4 mt-3 text-sm text-gray-400">
+            <span>📦 {{ tenant.order_count }} orders</span>
+            <span>🛵 {{ tenant.active_drivers }} drivers</span>
+        </div>
+        <div class="flex items-center gap-2 mt-2">
+            <span class="px-2 py-0.5 rounded text-xs {% if tenant.is_active %}bg-green-900/50 text-green-400{% else %}bg-red-900/50 text-red-400{% endif %}">
+                {{ tenant.is_active|yesno:"Active,Inactive" }}
+            </span>
+            {% if tenant.group %}
+            <span class="perm-badge model">Group: {{ tenant.group.name }}</span>
+            {% endif %}
+        </div>
+    </a>
+    {% endfor %}
+</div>
+{% else %}
+<div class="bg-gray-900 rounded-xl p-12 text-center border border-gray-800">
+    <p class="text-gray-500 text-lg">No tenants accessible.</p>
+    <p class="text-gray-600 text-sm mt-2">Your role doesn't have access to any tenants, or none exist yet.</p>
+</div>
+{% endif %}
+
+{% endblock %}

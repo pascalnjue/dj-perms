@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+{% block title %}{{ driver.user.username }} — DJ Perms{% endblock %}
+{% block content %}
+
+<div class="mb-6">
+    <a href="{% url 'driver_list' %}" class="text-sm text-gray-400 hover:text-white">← Back to Drivers</a>
+</div>
+
+<div class="bg-gray-900 rounded-xl p-6 border border-gray-800 mb-6">
+    <div class="flex items-center gap-3 mb-2">
+        <h1 class="text-2xl font-bold">{{ driver.user.username }}</h1>
+        <span class="perm-badge object">user_can_access()</span>
+        <span class="perm-badge model">driver role</span>
+    </div>
+    <p class="text-gray-400 text-sm">
+        ⓘ Driver access is checked via <code class="bg-gray-800 px-1.5 py-0.5 rounded text-xs">user_can_access()</code> on the driver's home tenant.
+        Drivers can have <strong>cross-tenant visibility</strong> via <code>shared_tenants</code> M2M field.
+    </p>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+        <div>
+            <span class="text-xs text-gray-500">Home Tenant</span>
+            <p class="text-sm"><a href="{% url 'tenant_detail' driver.home_tenant.slug %}" class="text-brand-500 hover:underline">{{ driver.home_tenant.name }}</a></p>
+        </div>
+        <div>
+            <span class="text-xs text-gray-500">Vehicle</span>
+            <p class="text-sm">{{ driver.vehicle_type|default:"—" }}</p>
+        </div>
+        <div>
+            <span class="text-xs text-gray-500">License</span>
+            <p class="text-sm">{{ driver.license_number|default:"—" }}</p>
+        </div>
+        <div>
+            <span class="text-xs text-gray-500">Status</span>
+            <p class="text-sm"><span class="px-2 py-0.5 rounded text-xs {% if driver.is_active %}bg-green-900/50 text-green-400{% else %}bg-red-900/50 text-red-400{% endif %}">{{ driver.is_active|yesno:"Active,Inactive" }}</span></p>
+        </div>
+    </div>
+
+    {% if all_tenants %}
+    <div class="mt-4 pt-4 border-t border-gray-800">
+        <span class="text-xs text-gray-500">Accessible Tenants</span>
+        <div class="flex flex-wrap gap-2 mt-1">
+            {% for t in all_tenants %}
+            <a href="{% url 'tenant_detail' t.slug %}" class="px-2 py-1 rounded text-xs bg-gray-800 text-gray-300 hover:bg-gray-700">
+                {{ t.name }}
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Stats -->
+<div class="grid grid-cols-3 gap-4 mb-6">
+    <div class="bg-gray-900 rounded-xl p-4 border border-gray-800 text-center">
+        <div class="text-2xl font-bold text-purple-400">{{ driver.delivery_count }}</div>
+        <div class="text-xs text-gray-500">Total Deliveries</div>
+    </div>
+    <div class="bg-gray-900 rounded-xl p-4 border border-gray-800 text-center">
+        <div class="text-2xl font-bold text-green-400">{{ driver.completed_deliveries }}</div>
+        <div class="text-xs text-gray-500">Completed</div>
+    </div>
+    <div class="bg-gray-900 rounded-xl p-4 border border-gray-800 text-center">
+        <div class="text-2xl font-bold text-amber-400">{{ driver.active_deliveries }}</div>
+        <div class="text-xs text-gray-500">Active</div>
+    </div>
+</div>
+
+<!-- Deliveries -->
+<div>
+    <h3 class="text-lg font-semibold mb-3">📦 Deliveries</h3>
+    <div class="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="text-gray-400 border-b border-gray-800 bg-gray-900/50">
+                    <th class="text-left py-2 px-4">#</th>
+                    <th class="text-left py-2 px-4">Account</th>
+                    <th class="text-left py-2 px-4">Status</th>
+                    <th class="text-right py-2 px-4">Amount</th>
+                    <th class="text-right py-2 px-4">Created</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for delivery in deliveries %}
+                <tr class="border-b border-gray-800/50 hover:bg-gray-800/30">
+                    <td class="py-2 px-4"><a href="{% url 'order_detail' delivery.pk %}" class="text-brand-500 font-mono text-xs">#{{ delivery.pk }}</a></td>
+                    <td class="py-2 px-4">
+                        {{ delivery.account.name }}
+                        <span class="text-xs text-gray-600">({{ delivery.account.tenant.name }})</span>
+                    </td>
+                    <td class="py-2 px-4"><span class="px-2 py-0.5 rounded-full text-xs font-medium status-{{ delivery.status }}">{{ delivery.get_status_display }}</span></td>
+                    <td class="py-2 px-4 text-right">${{ delivery.amount }}</td>
+                    <td class="py-2 px-4 text-right text-gray-500 text-xs">{{ delivery.created_at|date:"M d" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="py-8 text-center text-gray-500">No deliveries yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

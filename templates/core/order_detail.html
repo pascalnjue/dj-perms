@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+{% block title %}Order #{{ order.pk }} — DJ Perms{% endblock %}
+{% block content %}
+
+<div class="mb-6">
+    <a href="{% url 'order_list' %}" class="text-sm text-gray-400 hover:text-white">← Back to Orders</a>
+</div>
+
+<div class="bg-gray-900 rounded-xl p-6 border border-gray-800 mb-6">
+    <div class="flex items-center gap-3 mb-2">
+        <h1 class="text-2xl font-bold">Order #{{ order.pk }}</h1>
+        <span class="px-3 py-1 rounded-full text-sm font-medium status-{{ order.status }}">{{ order.get_status_display }}</span>
+        <span class="perm-badge object">user_can_access()</span>
+    </div>
+    <p class="text-gray-400 text-sm">
+        ⓘ This view is protected by <code class="bg-gray-800 px-1.5 py-0.5 rounded text-xs">user_can_access(request.user, order)</code>
+        which checks if you have access to the order's tenant.
+        The <strong>status update</strong> form below uses <code class="bg-gray-800 px-1.5 py-0.5 rounded text-xs">update_delivery_status</code> permission.
+    </p>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Order Details -->
+    <div class="bg-gray-900 rounded-xl p-5 border border-gray-800">
+        <h3 class="text-lg font-semibold mb-4">📋 Details</h3>
+        <dl class="space-y-3 text-sm">
+            <div class="flex justify-between">
+                <dt class="text-gray-400">Account</dt>
+                <dd><a href="{% url 'account_detail' order.account.pk %}" class="text-brand-500 hover:underline">{{ order.account.name }}</a></dd>
+            </div>
+            <div class="flex justify-between">
+                <dt class="text-gray-400">Tenant</dt>
+                <dd><a href="{% url 'tenant_detail' order.account.tenant.slug %}" class="text-brand-500 hover:underline">{{ order.account.tenant.name }}</a></dd>
+            </div>
+            <div class="flex justify-between">
+                <dt class="text-gray-400">Driver</dt>
+                <dd>
+                    {% if order.driver %}
+                    <a href="{% url 'driver_detail' order.driver.pk %}" class="text-brand-500 hover:underline">{{ order.driver.user.username }}</a>
+                    {% else %}
+                    <span class="text-gray-500">Unassigned</span>
+                    {% endif %}
+                </dd>
+            </div>
+            <div class="flex justify-between">
+                <dt class="text-gray-400">Amount</dt>
+                <dd class="font-bold">${{ order.amount }}</dd>
+            </div>
+            <div class="flex justify-between">
+                <dt class="text-gray-400">Created</dt>
+                <dd class="text-gray-300">{{ order.created_at|date:"M d, Y H:i" }}</dd>
+            </div>
+            <div class="flex justify-between">
+                <dt class="text-gray-400">Updated</dt>
+                <dd class="text-gray-300">{{ order.updated_at|date:"M d, Y H:i" }}</dd>
+            </div>
+            {% if order.delivered_at %}
+            <div class="flex justify-between">
+                <dt class="text-gray-400">Delivered</dt>
+                <dd class="text-green-400">{{ order.delivered_at|date:"M d, Y H:i" }}</dd>
+            </div>
+            <div class="flex justify-between">
+                <dt class="text-gray-400">Delivery Time</dt>
+                <dd class="text-amber-400">{{ order.delivery_time }} hours</dd>
+            </div>
+            {% endif %}
+        </dl>
+    </div>
+
+    <!-- Addresses -->
+    <div class="bg-gray-900 rounded-xl p-5 border border-gray-800">
+        <h3 class="text-lg font-semibold mb-4">📍 Addresses</h3>
+        <div class="mb-4">
+            <span class="text-xs text-gray-500 uppercase">Pickup</span>
+            <p class="text-sm mt-1 bg-gray-800 rounded-lg p-3">{{ order.pickup_address }}</p>
+        </div>
+        <div>
+            <span class="text-xs text-gray-500 uppercase">Delivery</span>
+            <p class="text-sm mt-1 bg-gray-800 rounded-lg p-3">{{ order.delivery_address }}</p>
+        </div>
+    </div>
+</div>
+
+<!-- Description -->
+<div class="bg-gray-900 rounded-xl p-5 border border-gray-800 mt-6">
+    <h3 class="text-lg font-semibold mb-2">📝 Description</h3>
+    <p class="text-sm text-gray-300">{{ order.description }}</p>
+</div>
+
+<!-- Status Update (shown if user has update_delivery_status or is superuser) -->
+{% if perms.core.update_delivery_status or user.is_superuser %}
+<div class="bg-gray-900 rounded-xl p-5 border border-gray-800 mt-6">
+    <div class="flex items-center gap-2 mb-3">
+        <h3 class="text-lg font-semibold">🔄 Update Status</h3>
+        <span class="perm-badge required">update_delivery_status</span>
+    </div>
+    <p class="text-xs text-gray-500 mb-3">
+        ⓘ This form is gated in the template with <code>{{ '{% if perms.core.update_delivery_status %}' }}</code>.
+        The view also checks the permission server-side.
+    </p>
+    <form method="post" action="{% url 'order_update_status' order.pk %}" class="flex items-center gap-3">
+        {% csrf_token %}
+        <select name="status" class="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-brand-500">
+            {% for value, label in order.STATUS_CHOICES %}
+            <option value="{{ value }}" {% if order.status == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="bg-brand-600 hover:bg-brand-700 text-white text-sm px-4 py-2 rounded-lg transition">
+            Update
+        </button>
+    </form>
+</div>
+{% else %}
+<div class="bg-gray-900 rounded-xl p-5 border border-gray-800 mt-6">
+    <div class="flex items-center gap-2 mb-2">
+        <h3 class="text-lg font-semibold text-gray-500">🔄 Update Status</h3>
+        <span class="perm-badge required">update_delivery_status</span>
+    </div>
+    <p class="text-sm text-gray-500">
+        ⛔ You don't have the <code>update_delivery_status</code> permission. Only drivers and admins can update order status.
+    </p>
+</div>
+{% endif %}
+
+{% endblock %}
