@@ -14,7 +14,7 @@ jobs:
         with:
           host: 167.86.81.218
           username: echelon
-          key: ${{ secrets.ECHELON_SSH_KEY }}
+          password: ${{ secrets.ECHELON_SSH_PASSWORD }}
           script: |
             set -e
             cd ~/domains/dj-perms.pascalnjue.com
