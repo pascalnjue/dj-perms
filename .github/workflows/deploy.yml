@@ -19,13 +19,13 @@ jobs:
             set -e
             cd ~/domains/dj-perms.pascalnjue.com
 
-            echo "📥 Pulling latest code..."
-            git pull origin main
+            echo "📥 Fetching latest code..."
+            git fetch origin main
+            git reset --hard origin/main
 
-            echo "📦 Installing dependencies..."
+            echo "📦 Checking dependencies..."
             source .venv/bin/activate
-            pip install -r <(echo "django>=6.0.6
-            gunicorn") --quiet
+            pip install django gunicorn --quiet
 
             echo "🗄️ Running migrations..."
             python manage.py migrate --noinput
